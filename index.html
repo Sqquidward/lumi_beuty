@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <title>Lumi — салон красоты</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Lumi Atelier — камерный салон на Патриарших: стрижка, сложный цвет, уход Davines и макияж. Большой Козихинский, 10." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,300;1,500;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f4efe8;
+      --ink: #1a1612;
+      --muted: #6f675f;
+      --line: rgba(26, 22, 18, 0.18);
+      --accent: #b08a5b;
+      --panel: #fffaf4;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --dur: 1.05s;
+    }
+    * { margin: 0; padding: 0; outline: none !important; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { width: 100%; overflow-x: hidden; background: var(--bg); }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      color: var(--ink);
+    }
+    canvas { display: block; outline: none !important; }
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    .loader.is-gone {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loader span {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(2.4rem, 7vw, 5rem);
+      letter-spacing: 0.04em;
+      animation: loaderPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes loaderPulse {
+      0%, 100% { opacity: 0.28; }
+      50% { opacity: 1; }
+    }
+
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.35rem 4vw;
+      pointer-events: none;
+      background: transparent;
+      transition: background 0.5s var(--ease), backdrop-filter 0.5s var(--ease), padding 0.5s var(--ease);
+    }
+    .nav.is-scrolled {
+      padding: 0.95rem 4vw;
+      background: rgba(244, 239, 232, 0.78);
+      backdrop-filter: blur(14px);
+    }
+    .nav a {
+      pointer-events: auto;
+      position: relative;
+      color: var(--ink);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -0.35rem;
+      width: 0;
+      height: 1px;
+      background: currentColor;
+      transition: width 0.45s var(--ease);
+    }
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+    .nav-brand {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      font-size: 1.05rem;
+      text-transform: none;
+    }
+    .nav-links { display: flex; gap: 1.8rem; }
+
+    .hero {
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0 4vw 5.5rem;
+      pointer-events: none;
+    }
+    .hero-fallback {
+      display: none;
+      text-align: center;
+      pointer-events: none;
+    }
+    .no-webgpu .hero-fallback { display: block; }
+    .hero-fallback h1 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 300;
+      font-style: italic;
+      font-size: clamp(4rem, 14vw, 9rem);
+      line-height: 0.85;
+    }
+    .hero-fallback p {
+      margin-top: 1rem;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-style: italic;
+      font-size: 1.25rem;
+    }
+    .hero .book-btn {
+      pointer-events: auto;
+      margin-top: 0;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), background 0.2s ease, color 0.2s ease;
+    }
+    body.is-ready .hero .book-btn {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.15s;
+    }
+
+    .scroll-hint {
+      position: fixed;
+      left: 50%;
+      bottom: 1.4rem;
+      transform: translateX(-50%);
+      z-index: 8;
+      letter-spacing: 0.04em;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--ink);
+      animation: hintPulse 2.4s ease-in-out infinite;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    @keyframes hintPulse {
+      0%, 100% { opacity: 0.25; transform: translateX(-50%) translateY(0); }
+      50% { opacity: 0.85; transform: translateX(-50%) translateY(6px); }
+    }
+
+    main { position: relative; z-index: 5; background: var(--bg); }
+
+    .section {
+      min-height: auto;
+      padding: 7.5rem 8vw 6rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .kicker {
+      letter-spacing: 0.08em;
+      font-size: 0.72rem;
+      font-weight: 500;
+      text-transform: none;
+      margin-bottom: 0.85rem;
+      color: var(--muted);
+    }
+
+    h2 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 500;
+      font-style: normal;
+      font-size: clamp(2.4rem, 5.5vw, 4.4rem);
+      line-height: 1.05;
+      margin-bottom: 1.6rem;
+    }
+
+    .lead {
+      max-width: 36rem;
+      font-size: 1.05rem;
+      font-weight: 400;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+    }
+    [data-reveal].is-visible {
+      opacity: 1;
+      transform: none;
+    }
+    .service[data-reveal]:nth-child(1),
+    .quote[data-reveal]:nth-child(1) { transition-delay: 0.05s; }
+    .service[data-reveal]:nth-child(2),
+    .quote[data-reveal]:nth-child(2) { transition-delay: 0.14s; }
+    .service[data-reveal]:nth-child(3),
+    .quote[data-reveal]:nth-child(3) { transition-delay: 0.23s; }
+    .service[data-reveal]:nth-child(4) { transition-delay: 0.32s; }
+
+    .works-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 0.7rem;
+    }
+    .work {
+      position: relative;
+      overflow: hidden;
+      min-height: 280px;
+      background: #ddd4c8;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+    }
+    .work.is-visible {
+      opacity: 1;
+      transform: none;
+    }
+    .work:nth-child(1) { transition-delay: 0.04s; }
+    .work:nth-child(2) { transition-delay: 0.12s; }
+    .work:nth-child(3) { transition-delay: 0.08s; }
+    .work:nth-child(4) { transition-delay: 0.16s; }
+    .work:nth-child(5) { transition-delay: 0.22s; }
+    .work:nth-child(1) { grid-column: span 7; min-height: 62vh; }
+    .work:nth-child(2) { grid-column: span 5; min-height: 62vh; }
+    .work:nth-child(3),
+    .work:nth-child(4),
+    .work:nth-child(5) { grid-column: span 4; min-height: 42vh; }
+    .work img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .work figcaption {
+      position: absolute;
+      left: 1rem;
+      bottom: 1rem;
+      color: #fff;
+      letter-spacing: 0.18em;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2.5rem 3rem;
+      margin-top: 3rem;
+    }
+    .service h3 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.85rem;
+      font-weight: 300;
+      font-style: italic;
+      margin-bottom: 0.55rem;
+    }
+    .service p {
+      font-size: 0.98rem;
+      line-height: 1.55;
+      max-width: 22rem;
+      color: var(--muted);
+    }
+    .service .price {
+      margin-top: 0.7rem;
+      letter-spacing: 0.16em;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .about-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4vw;
+      align-items: start;
+    }
+    .hours {
+      margin-top: 3rem;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.35rem;
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.55;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 2.5rem;
+    }
+    @media (min-width: 1100px) {
+      .about-layout .team-grid { grid-template-columns: 1fr; }
+    }
+    .person {
+      padding: 1.6rem 1.5rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .person-role {
+      letter-spacing: 0.2em;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.55rem;
+    }
+    .person h3 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 2rem;
+      font-weight: 300;
+      font-style: italic;
+    }
+    .person p {
+      margin-top: 0.7rem;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .quotes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .quote {
+      padding: 1.8rem 1.5rem;
+      position: relative;
+    }
+    .quote::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 1px;
+      width: 0;
+      background: var(--ink);
+      transition: width 1.1s var(--ease);
+    }
+    .quote.is-visible::before { width: 100%; }
+    .quote p {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-style: italic;
+      font-size: 1.35rem;
+      line-height: 1.35;
+    }
+    .quote cite {
+      display: block;
+      margin-top: 1.1rem;
+      font-style: normal;
+      letter-spacing: 0.16em;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .contact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3rem 6rem;
+      margin-top: 2rem;
+    }
+    .contact-row p {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.5rem;
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.45;
+    }
+    .contact-row a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid var(--line);
+    }
+    .contact-meta {
+      margin-top: 1.6rem;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--muted);
+      max-width: 36rem;
+    }
+
+    .book,
+    .book-btn {
+      display: inline-block;
+      margin-top: 3rem;
+      padding: 0.95rem 1.8rem;
+      border: 1px solid var(--ink);
+      background: transparent;
+      color: var(--ink);
+      text-decoration: none;
+      letter-spacing: 0.28em;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    }
+    .book:hover,
+    .book-btn:hover:not(:disabled) {
+      background: var(--ink);
+      color: var(--bg);
+    }
+    .book-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .service .book-btn {
+      margin-top: 1.1rem;
+      padding: 0.65rem 1.1rem;
+      letter-spacing: 0.2em;
+      font-size: 0.62rem;
+    }
+
+    .booking-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding: 1.2rem;
+      background: rgba(244, 239, 232, 0);
+      backdrop-filter: blur(0);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s var(--ease), background 0.4s var(--ease), backdrop-filter 0.4s var(--ease);
+    }
+    .booking-overlay.is-open {
+      opacity: 1;
+      pointer-events: auto;
+      background: rgba(244, 239, 232, 0.82);
+      backdrop-filter: blur(14px);
+    }
+    .booking-panel {
+      width: min(760px, 100%);
+      max-height: min(92vh, 900px);
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--ink);
+      padding: 2rem 1.8rem 1.4rem;
+      transform: translateY(28px) scale(0.98);
+      transition: transform 0.45s var(--ease);
+    }
+    .booking-overlay.is-open .booking-panel {
+      transform: none;
+    }
+    .booking-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    .booking-kicker {
+      letter-spacing: 0.38em;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 0.45rem;
+      color: var(--muted);
+    }
+    .booking-panel h3 {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-weight: 300;
+      font-style: italic;
+      font-size: clamp(2rem, 5vw, 3.1rem);
+      line-height: 0.95;
+    }
+    .booking-close {
+      border: 0;
+      background: none;
+      width: 2.2rem;
+      height: 2.2rem;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--ink);
+      transition: transform 0.3s var(--ease);
+    }
+    .booking-close:hover { transform: rotate(90deg); }
+    .book-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.4rem;
+    }
+    .book-step {
+      border: 0;
+      background: none;
+      text-align: left;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--muted);
+    }
+    .book-step:disabled { cursor: default; opacity: 0.45; }
+    .book-step-index {
+      display: block;
+      letter-spacing: 0.18em;
+      font-size: 0.58rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    .book-step span:last-child {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .book-step::after {
+      content: "";
+      display: block;
+      height: 2px;
+      margin-top: 0.55rem;
+      background: #ddd4c8;
+      transform: scaleX(0.22);
+      transform-origin: left;
+      transition: transform 0.45s var(--ease), background 0.3s ease;
+    }
+    .book-step.is-active,
+    .book-step.is-done { color: var(--ink); }
+    .book-step.is-active::after,
+    .book-step.is-done::after {
+      background: var(--ink);
+      transform: scaleX(1);
+    }
+    .book-stage {
+      display: grid;
+      min-height: 22rem;
+    }
+    .book-view {
+      grid-area: 1 / 1;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateX(28px);
+      transition: opacity 0.4s var(--ease), transform 0.45s var(--ease), visibility 0.4s;
+    }
+    .book-view.is-active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: none;
+    }
+    .book-view.is-back {
+      transform: translateX(-28px);
+    }
+    .book-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+    .book-card,
+    .book-day,
+    .book-slot {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      font-family: inherit;
+      text-align: left;
+      transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.25s var(--ease);
+    }
+    .book-card {
+      padding: 1.1rem 1.1rem 1rem;
+    }
+    .book-card:hover,
+    .book-day:hover,
+    .book-slot:hover:not(:disabled) {
+      border-color: var(--ink);
+      transform: translateY(-2px);
+    }
+    .book-card.is-selected,
+    .book-day.is-selected,
+    .book-slot.is-selected {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--bg);
+      transform: none;
+    }
+    .book-card-title {
+      display: block;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.5rem;
+      font-style: italic;
+      font-weight: 300;
+    }
+    .book-card-desc {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.88rem;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+    .book-card.is-selected .book-card-desc { color: rgba(244, 239, 232, 0.72); }
+    .book-card-meta {
+      display: block;
+      margin-top: 0.7rem;
+      letter-spacing: 0.12em;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .book-card.is-selected .book-card-meta { color: var(--bg); }
+    .book-days {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding: 0.15rem 0 0.5rem;
+    }
+    .book-day {
+      min-width: 4.5rem;
+      padding: 0.7rem 0.35rem;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+    .book-day span {
+      display: block;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .book-day strong {
+      display: block;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.4rem;
+      font-weight: 300;
+      font-style: italic;
+      margin: 0.12rem 0;
+    }
+    .book-slot-group { margin-top: 1.1rem; }
+    .book-slots {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(5.1rem, 1fr));
+      gap: 0.4rem;
+    }
+    .book-slot {
+      text-align: center;
+      padding: 0.62rem 0.25rem;
+      font-size: 0.92rem;
+      animation: slotIn 0.4s var(--ease) both;
+    }
+    .book-slot:disabled {
+      opacity: 0.28;
+      cursor: not-allowed;
+      transform: none;
+    }
+    @keyframes slotIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    .booking-label {
+      display: block;
+      margin: 1.05rem 0 0.45rem;
+      letter-spacing: 0.28em;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .booking-input {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid var(--ink);
+      padding: 0.7rem 0;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.35rem;
+      font-style: italic;
+      font-weight: 300;
+      background: transparent;
+      color: var(--ink);
+      transition: border-color 0.2s ease;
+    }
+    .booking-input.is-error { border-color: #b42318; }
+    .booking-hint {
+      min-height: 1.2rem;
+      margin-top: 0.35rem;
+      font-size: 0.78rem;
+      color: #b42318;
+    }
+    .booking-recap {
+      display: grid;
+      gap: 0.35rem;
+      padding: 1rem 0 0.4rem;
+      margin-bottom: 0.6rem;
+      border-bottom: 1px solid var(--line);
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-style: italic;
+      font-size: 1.25rem;
+      line-height: 1.4;
+    }
+    .booking-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1.3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+    .booking-note {
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.12rem;
+      font-style: italic;
+      font-weight: 300;
+      flex: 1;
+      min-width: 12rem;
+    }
+    .booking-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      align-items: center;
+    }
+    .booking-actions .book-btn { margin-top: 0; }
+    .booking-ghost {
+      border: 0;
+      background: none;
+      font-family: inherit;
+      letter-spacing: 0.22em;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .booking-success {
+      min-height: 280px;
+      display: grid;
+      align-content: center;
+      justify-items: start;
+    }
+    .booking-check {
+      width: 52px;
+      height: 52px;
+      margin-bottom: 1.1rem;
+    }
+    .booking-check circle,
+    .booking-check path {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 1.6;
+    }
+    .book-view.is-active .booking-check circle {
+      stroke-dasharray: 160;
+      stroke-dashoffset: 160;
+      animation: checkDraw 0.7s var(--ease) forwards;
+    }
+    .book-view.is-active .booking-check path {
+      stroke-dasharray: 40;
+      stroke-dashoffset: 40;
+      animation: checkDraw 0.45s var(--ease) 0.45s forwards;
+    }
+    @keyframes checkDraw { to { stroke-dashoffset: 0; } }
+    .booking-input-wrap.is-shake {
+      animation: shake 0.38s ease;
+    }
+    @keyframes shake {
+      0%, 100% { transform: none; }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    footer.section {
+      min-height: auto;
+      padding: 2.2rem 8vw;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      letter-spacing: 0.22em;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 900px) {
+      .work:nth-child(1),
+      .work:nth-child(2),
+      .work:nth-child(3),
+      .work:nth-child(4),
+      .work:nth-child(5) { grid-column: span 12; min-height: 46vh; }
+      .quotes { grid-template-columns: 1fr; }
+      .team-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 800px) {
+      .about-layout { grid-template-columns: 1fr; }
+      .nav-links { gap: 1rem; }
+      footer.section { flex-direction: column; }
+    }
+    @media (max-width: 700px) {
+      .book-grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .loader span, .scroll-hint { animation: none; }
+      [data-reveal], .work, .hero .book-btn { opacity: 1; transform: none; }
+      .quote::before { width: 100%; }
+      .work img, .nav { transition: none; }
+      .book-view, .booking-overlay, .booking-panel, .book-slot { transition: none; animation: none; }
+      .book-view { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loader" id="loader"><span>Lumi</span></div>
+
+  <nav class="nav">
+    <a class="nav-brand" href="#top">Lumi</a>
+    <div class="nav-links">
+      <a href="#works">Работы</a>
+      <a href="#services">Услуги</a>
+      <a href="#about">Салон</a>
+      <a href="#contact">Запись</a>
+    </div>
+  </nav>
+
+  <header id="top" class="hero">
+    <h1 class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Lumi — салон красоты</h1>
+    <div class="hero-fallback">
+      <h1>Lumi</h1>
+      <p>Салон на Патриарших</p>
+    </div>
+    <button class="book-btn" type="button" data-open-booking>Записаться</button>
+  </header>
+  <div class="scroll-hint">вниз</div>
+
+  <main>
+    <section id="works" class="section">
+      <p class="kicker" data-reveal>Фото</p>
+      <h2 data-reveal>Последние работы</h2>
+      <div class="works-grid">
+        <figure class="work">
+          <img src="/works/work-1.jpg" alt="Женская стрижка и укладка в Lumi" />
+          <figcaption>Каре · Ника Левина</figcaption>
+        </figure>
+        <figure class="work">
+          <img src="/works/work-2.jpg" alt="Дневной макияж" />
+          <figcaption>Make-up · Софья Ким</figcaption>
+        </figure>
+        <figure class="work">
+          <img src="/works/work-3.jpg" alt="Сложное окрашивание блонд" />
+          <figcaption>AirTouch · Марк Орлов</figcaption>
+        </figure>
+        <figure class="work">
+          <img src="/works/work-4.jpg" alt="Уход для кожи и волос" />
+          <figcaption>Davines Naturaltech</figcaption>
+        </figure>
+        <figure class="work">
+          <img src="/works/work-5.jpg" alt="Интерьер салона Lumi на Патриарших" />
+          <figcaption>Козихинский, 10</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="services" class="section">
+      <p class="kicker" data-reveal>Услуги</p>
+      <h2 data-reveal>Что делаем</h2>
+      <p class="lead" data-reveal>Цены фиксированные до длины по лопатки. Если длиннее — напишем в Telegram после фото.</p>
+      <div class="services-grid">
+        <article class="service" data-reveal>
+          <h3>Стрижка</h3>
+          <p>Женская стрижка с укладкой на брашинг. Смотрим форму лица, пробор и то, как носите волосы в обычной жизни.</p>
+          <p class="price">5 500 ₽ · 1 ч 15 мин</p>
+          <button class="book-btn" type="button" data-open-booking="haircut">Записаться</button>
+        </article>
+        <article class="service" data-reveal>
+          <h3>Укладка</h3>
+          <p>Локоны, объём у корня или гладкая форма. Подходит, если стрижка свежая и нужен только выход в город.</p>
+          <p class="price">4 500 ₽ · 45 мин</p>
+          <button class="book-btn" type="button" data-open-booking="blowdry">Записаться</button>
+        </article>
+        <article class="service" data-reveal>
+          <h3>Сложный цвет</h3>
+          <p>AirTouch, балаяж и бережный блонд на Davines. Включает тонирование, уход и укладку. Консультация — 15 минут в начале.</p>
+          <p class="price">14 900 ₽ · 3 ч 30 мин</p>
+          <button class="book-btn" type="button" data-open-booking="airtouch">Записаться</button>
+        </article>
+        <article class="service" data-reveal>
+          <h3>Тонирование</h3>
+          <p>Обновить тон, убрать желтизну, вернуть глубину натуральным. Без осветления.</p>
+          <p class="price">8 900 ₽ · 2 ч</p>
+          <button class="book-btn" type="button" data-open-booking="color">Записаться</button>
+        </article>
+        <article class="service" data-reveal>
+          <h3>Уход Davines</h3>
+          <p>Naturaltech или Nounou по состоянию длины: плотность, блеск, спокойная кожа головы. Без кератина «на месяц».</p>
+          <p class="price">4 200 ₽ · 50 мин</p>
+          <button class="book-btn" type="button" data-open-booking="care">Записаться</button>
+        </article>
+        <article class="service" data-reveal>
+          <h3>Брови</h3>
+          <p>Архитектура, окрашивание и фиксация. Форма, которую можно повторить дома, а не только на фото.</p>
+          <p class="price">3 200 ₽ · 45 мин</p>
+          <button class="book-btn" type="button" data-open-booking="brows">Записаться</button>
+        </article>
+        <article class="service" data-reveal>
+          <h3>Макияж</h3>
+          <p>Дневной или вечерний. Кожа, а не маска: стойкость до ужина, снятие без пятна на воротнике.</p>
+          <p class="price">6 500 ₽ · 1 ч</p>
+          <button class="book-btn" type="button" data-open-booking="makeup">Записаться</button>
+        </article>
+      </div>
+    </section>
+
+    <section id="about" class="section">
+      <p class="kicker" data-reveal>О салоне</p>
+      <div class="about-layout">
+        <h2 data-reveal>Два кабинета<br>на Козихинском</h2>
+        <div data-reveal>
+          <p class="lead">Lumi Atelier открылся в 2023-м в двух кабинетах на Козихинском: шесть кресел нет и не будет. За день принимаем до десяти гостей, чтобы не ставить таймер на разговор.</p>
+          <p class="hours">
+            Пн–пт 10:00–21:00, последняя запись в 19:30<br>
+            Сб–вс 11:00–20:00, последняя запись в 18:30<br>
+            м. Маяковская, 8 минут пешком
+          </p>
+          <div class="team-grid">
+            <article class="person">
+              <p class="person-role">Арт-директор · стрижка</p>
+              <h3>Ника Левина</h3>
+              <p>12 лет в кресле, Wella Professionals. Каре, боб, слои. Вторник–суббота.</p>
+            </article>
+            <article class="person">
+              <p class="person-role">Колорист</p>
+              <h3>Марк Орлов</h3>
+              <p>Davines Colorist, сложный блонд и AirTouch. Среда–воскресенье.</p>
+            </article>
+            <article class="person">
+              <p class="person-role">Брови и make-up</p>
+              <h3>Софья Ким</h3>
+              <p>Make-up artist, работала на съёмках для «Афиши». Четверг–понедельник.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="stories" class="section">
+      <p class="kicker" data-reveal>Отзывы</p>
+      <h2 data-reveal>С Яндекса и Telegram</h2>
+      <div class="quotes">
+        <blockquote class="quote" data-reveal>
+          <p>«Каре село. До этого в трёх местах просил «покороче у лица» — и всё равно торчало.»</p>
+          <cite>Алина, стрижка</cite>
+        </blockquote>
+        <blockquote class="quote" data-reveal>
+          <p>«Желтизну убрали без серого. Через месяц пришла на тонирование, не на «спасение».»</p>
+          <cite>Ева, цвет</cite>
+        </blockquote>
+        <blockquote class="quote" data-reveal>
+          <p>«На свадьбу сестры. К 23:00 ещё держалось, дома смылось нормально, не пятном.»</p>
+          <cite>Даша, макияж</cite>
+        </blockquote>
+      </div>
+    </section>
+
+    <section id="contact" class="section">
+      <p class="kicker" data-reveal>Запись</p>
+      <h2 data-reveal>Записаться</h2>
+      <div class="contact-row" data-reveal>
+        <p>
+          <a href="tel:+74951201840">+7 495 120-18-40</a><br>
+          <a href="mailto:hello@lumi.salon">hello@lumi.salon</a><br>
+          <a href="https://t.me/lumi_atelier" target="_blank" rel="noreferrer">telegram · @lumi_atelier</a>
+        </p>
+        <p>
+          Москва, Патриаршие пруды<br>
+          Большой Козихинский пер., 10<br>
+          подъезд 2, 3 этаж, домофон 10
+        </p>
+      </div>
+      <p class="contact-meta" data-reveal>
+        От Маяковской — по Большой Садовой, направо в Козихинский. Код домофона пришлём в SMS после записи. Оплата картой и наличными.
+      </p>
+      <button class="book-btn" type="button" data-open-booking>Выбрать услугу и время</button>
+    </section>
+
+    <footer class="section">
+      <span>Lumi, Москва</span>
+      <span>© 2026</span>
+    </footer>
+  </main>
+
+  <div class="booking-overlay" id="booking-overlay" aria-hidden="true">
+    <div class="booking-panel" id="booking-panel" role="dialog" aria-modal="true" aria-labelledby="booking-title">
+      <div class="booking-top">
+        <div>
+          <p class="booking-kicker">Онлайн-запись</p>
+          <h3 id="booking-title">Выберите услугу</h3>
+        </div>
+        <button class="booking-close" type="button" data-close-booking aria-label="Закрыть">×</button>
+      </div>
+      <div class="book-steps">
+        <button class="book-step is-active" type="button" data-goto-step="1">
+          <span class="book-step-index">01</span>
+          <span>Услуга</span>
+        </button>
+        <button class="book-step" type="button" data-goto-step="2" disabled>
+          <span class="book-step-index">02</span>
+          <span>Время</span>
+        </button>
+        <button class="book-step" type="button" data-goto-step="3" disabled>
+          <span class="book-step-index">03</span>
+          <span>Контакты</span>
+        </button>
+      </div>
+
+      <div class="book-stage">
+        <div class="book-view is-active" data-step="1">
+          <div class="book-grid" id="booking-services"></div>
+        </div>
+
+        <div class="book-view" data-step="2">
+          <p class="booking-label">День</p>
+          <div class="book-days" id="booking-dates"></div>
+          <div id="booking-times"></div>
+        </div>
+
+        <div class="book-view" data-step="3">
+          <div class="booking-recap" id="booking-recap"></div>
+          <div class="booking-input-wrap">
+            <label class="booking-label" for="booking-name">Имя</label>
+            <input class="booking-input" id="booking-name" type="text" autocomplete="name" placeholder="Как к вам обращаться">
+            <p class="booking-hint" id="booking-name-hint"></p>
+          </div>
+          <div class="booking-input-wrap">
+            <label class="booking-label" for="booking-phone">Телефон</label>
+            <input class="booking-input" id="booking-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 (900) 000-00-00">
+            <p class="booking-hint" id="booking-phone-hint"></p>
+          </div>
+        </div>
+
+        <div class="book-view booking-success" data-step="4">
+          <svg class="booking-check" viewBox="0 0 52 52" aria-hidden="true">
+            <circle cx="26" cy="26" r="24"></circle>
+            <path d="M16 27.5 23 34.5 37 18.5"></path>
+          </svg>
+          <h3 id="booking-success-title">Вы записаны</h3>
+          <p class="booking-note" id="booking-success-text"></p>
+        </div>
+      </div>
+
+      <div class="booking-bar">
+        <p class="booking-note" id="booking-summary">Выберите услугу</p>
+        <div class="booking-actions">
+          <button class="booking-ghost" type="button" data-prev-step hidden>Назад</button>
+          <button class="book-btn" id="booking-next" type="button" data-next-step disabled>Далее</button>
+          <button class="book-btn" id="booking-submit" type="button" hidden>Подтвердить</button>
+          <button class="book-btn" type="button" data-book-again hidden>Ещё одна запись</button>
+          <button class="booking-ghost" type="button" data-close-booking hidden data-success-close>Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/ui.js"></script>
+  <script type="module" src="/scene.js"></script>
+  <script type="module" src="/booking.js"></script>
+</body>
+</html>

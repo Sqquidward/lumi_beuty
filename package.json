@@ -1,0 +1,22 @@
+{
+  "name": "vary-frosted-omma",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.19.3",
+    "lil-gui": "^0.21.0",
+    "stats-gl": "^4.0.2",
+    "three": "^0.183.2"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "wrangler": "^4.86.0"
+  }
+}
